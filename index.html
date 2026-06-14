@@ -103,7 +103,7 @@ button:hover{
 <label>Fecha de inicio</label> <input type="date" id="fechaInicio">
 
 <button onclick="calcularFecha()">
-📅 Calcular fecha hábil
+📅 Calcular fecha
 </button>
 
 <div id="resultado"></div>
@@ -286,7 +286,9 @@ return fecha.toLocaleDateString(
 
 function calcularFecha(){
 
-const valor =
+const valor = const fechaIngresadaTexto =
+valor.split('-').reverse().join('/');
+    
 document.getElementById(
 "fechaInicio"
 ).value;
@@ -300,15 +302,18 @@ alert(
 return;
 }
 
-let fecha =
-new Date(valor);
+const [anio, mes, dia] = valor.split('-');
+let fecha = new Date(anio, mes - 1, dia);
 
 fecha.setDate(
 fecha.getDate()+45
 );
 
-const fechaOriginal =
-new Date(fecha);
+const fechaOriginal = new Date(
+fecha.getFullYear(),
+fecha.getMonth(),
+fecha.getDate()
+);
 
 let motivo = "";
 
@@ -384,7 +389,7 @@ document.getElementById(
 `<div class="card">
 
 <p><strong>Fecha ingresada:</strong>
-${formatear(new Date(valor))}
+${fechaIngresadaTexto}
 </p>
 
 <p><strong>Fecha +45 días:</strong>
