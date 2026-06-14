@@ -1,416 +1,143 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Calculo de días</title>
-
 <style>
-body{
-    margin:0;
-    padding:20px;
-    font-family:Arial,sans-serif;
-    background:#f4f6f9;
-}
-
-.container{
-    max-width:600px;
-    margin:auto;
-    background:white;
-    padding:25px;
-    border-radius:12px;
-    box-shadow:0 2px 10px rgba(0,0,0,.15);
-}
-
-h1{
-    text-align:center;
-    color:#0b1f4d;
-}
-
-label{
-    display:block;
-    margin-top:15px;
-    font-weight:bold;
-}
-
-input[type="date"]{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-    border:1px solid #ccc;
-    border-radius:6px;
-    box-sizing:border-box;
-}
-
-button{
-    width:100%;
-    margin-top:15px;
-    padding:12px;
-    background:#0b1f4d;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:16px;
-}
-
-button:hover{
-    opacity:.9;
-}
-
-.card{
-    margin-top:20px;
-    padding:15px;
-    background:#f7f9fc;
-    border-radius:8px;
-    border-left:5px solid #0b1f4d;
-}
-
-.feriado-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:8px;
-    padding:8px;
-    background:#f5f5f5;
-    border-radius:5px;
-}
-
-.delete-btn{
-    width:auto;
-    margin:0;
-    background:#c62828;
-    padding:5px 10px;
-}
-
-.footer{
-    text-align:center;
-    margin-top:30px;
-    color:#666;
-}
+body{margin:0;padding:20px;font-family:'Segoe UI',Arial,sans-serif;background:#eef2f7}
+.container{max-width:700px;margin:auto;background:#fff;padding:30px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
+h1{text-align:center;color:#0b1f4d}
+label{display:block;margin:10px 0 8px;font-weight:600}
+input[type=date]{width:100%;padding:12px;border:1px solid #d7dce5;border-radius:8px;box-sizing:border-box}
+button{width:100%;margin-top:15px;padding:13px;border:none;border-radius:8px;background:#0b1f4d;color:#fff;font-size:16px;cursor:pointer}
+.copy-btn{background:#198754}
+.delete-btn{width:auto;background:#dc3545;margin:0;padding:6px 12px}
+.card{margin-top:20px;background:#f8faff;padding:20px;border-radius:12px;border-left:5px solid #0b1f4d}
+.feriado-item{display:flex;justify-content:space-between;align-items:center;background:#f5f5f5;padding:8px;margin-top:8px;border-radius:6px}
+.historial table{width:100%;border-collapse:collapse}
+.historial th,.historial td{border:1px solid #ddd;padding:8px;text-align:center}
+.historial th{background:#0b1f4d;color:white}
+.footer{text-align:center;margin-top:30px;color:#777}
 </style>
-
 </head>
-
 <body>
-
 <div class="container">
-
 <h1>Calculo de días</h1>
 
-<label>Fecha de inicio</label> <input type="date" id="fechaInicio">
+<label>Fecha de inicio</label>
+<input type="date" id="fechaInicio">
 
-<button onclick="calcularFecha()">
-📅 Calcular fecha
-</button>
+<button onclick="calcularFecha()">📅 Calcular fecha</button>
 
 <div id="resultado"></div>
 
 <hr style="margin:25px 0">
 
 <h3>Feriados adicionales</h3>
-
 <input type="date" id="nuevoFeriado">
-
-<button onclick="agregarFeriado()">
-➕ Agregar feriado
-</button>
-
+<button onclick="agregarFeriado()">➕ Agregar feriado</button>
 <div id="listaFeriados"></div>
 
-<div class="footer">
-Desarrollado por G.I.
+<div class="historial">
+<h3>Historial</h3>
+<table>
+<thead><tr><th>Inicio</th><th>Fecha hábil</th></tr></thead>
+<tbody id="tablaHistorial"></tbody>
+</table>
 </div>
 
+<div class="footer">Desarrollado por G.I.</div>
 </div>
 
 <script>
+let feriadosExtras=JSON.parse(localStorage.getItem("feriadosExtras"))||[];
+let historial=JSON.parse(localStorage.getItem("historialCalculos"))||[];
 
-let feriadosExtras =
-JSON.parse(localStorage.getItem("feriadosExtras")) || [];
-
-function guardarExtras(){
-localStorage.setItem(
-"feriadosExtras",
-JSON.stringify(feriadosExtras)
-);
-}
-
+function guardarExtras(){localStorage.setItem("feriadosExtras",JSON.stringify(feriadosExtras));}
 function agregarFeriado(){
-
-const fecha =
-document.getElementById("nuevoFeriado").value;
-
-if(!fecha) return;
-
-if(!feriadosExtras.includes(fecha)){
-feriadosExtras.push(fecha);
-guardarExtras();
-mostrarFeriados();
+ const fecha=document.getElementById("nuevoFeriado").value;
+ if(!fecha) return;
+ if(!feriadosExtras.includes(fecha)){feriadosExtras.push(fecha);guardarExtras();}
+ document.getElementById("nuevoFeriado").value="";
+ mostrarFeriados();
 }
-
-document.getElementById("nuevoFeriado").value="";
-}
-
 function eliminarFeriado(fecha){
-
-feriadosExtras =
-feriadosExtras.filter(f=>f!==fecha);
-
-guardarExtras();
-mostrarFeriados();
+ feriadosExtras=feriadosExtras.filter(f=>f!==fecha);
+ guardarExtras();mostrarFeriados();
 }
-
 function mostrarFeriados(){
-
-const div =
-document.getElementById("listaFeriados");
-
-if(feriadosExtras.length===0){
-
-div.innerHTML =
-"<p>No hay feriados adicionales.</p>";
-
-return;
+ const div=document.getElementById("listaFeriados");
+ if(!feriadosExtras.length){div.innerHTML="<p>No hay feriados adicionales.</p>";return;}
+ div.innerHTML="";
+ feriadosExtras.forEach(f=>div.innerHTML+=`<div class="feriado-item"><span>${f}</span><button class="delete-btn" onclick="eliminarFeriado('${f}')">🗑️</button></div>`);
 }
-
-div.innerHTML="";
-
-feriadosExtras.forEach(f=>{
-
-div.innerHTML += `
-<div class="feriado-item">
-<span>${f}</span>
-<button class="delete-btn"
-onclick="eliminarFeriado('${f}')">
-🗑️
-</button>
-</div>
-`;
-
-});
-
+function obtenerPascua(y){
+ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+ return new Date(y,Math.floor((h+l-7*m+114)/31)-1,((h+l-7*m+114)%31)+1);
 }
-
-function obtenerPascua(anio){
-
-const a = anio % 19;
-const b = Math.floor(anio / 100);
-const c = anio % 100;
-const d = Math.floor(b / 4);
-const e = b % 4;
-const f = Math.floor((b + 8) / 25);
-const g = Math.floor((b - f + 1) / 3);
-const h = (19*a + b - d - g + 15) % 30;
-const i = Math.floor(c / 4);
-const k = c % 4;
-const l = (32 + 2*e + 2*i - h - k) % 7;
-const m = Math.floor((a + 11*h + 22*l)/451);
-
-const mes =
-Math.floor((h+l-7*m+114)/31);
-
-const dia =
-((h+l-7*m+114)%31)+1;
-
-return new Date(anio,mes-1,dia);
+function obtenerFeriadosPeru(y){
+ const p=obtenerPascua(y),j=new Date(p),v=new Date(p);
+ j.setDate(j.getDate()-3);v.setDate(v.getDate()-2);
+ const fmt=d=>d.toISOString().split("T")[0];
+ return [`${y}-01-01`,fmt(j),fmt(v),`${y}-05-01`,`${y}-06-29`,`${y}-07-28`,`${y}-07-29`,`${y}-08-30`,`${y}-10-08`,`${y}-11-01`,`${y}-12-08`,`${y}-12-09`,`${y}-12-25`];
 }
-
-function obtenerFeriadosPeru(anio){
-
-const pascua =
-obtenerPascua(anio);
-
-const juevesSanto =
-new Date(pascua);
-
-juevesSanto.setDate(
-juevesSanto.getDate()-3
-);
-
-const viernesSanto =
-new Date(pascua);
-
-viernesSanto.setDate(
-viernesSanto.getDate()-2
-);
-
-function format(d){
-return d.toISOString().split("T")[0];
-}
-
-return [
-
-`${anio}-01-01`,
-format(juevesSanto),
-format(viernesSanto),
-`${anio}-05-01`,
-`${anio}-06-29`,
-`${anio}-07-28`,
-`${anio}-07-29`,
-`${anio}-08-30`,
-`${anio}-10-08`,
-`${anio}-11-01`,
-`${anio}-12-08`,
-`${anio}-12-09`,
-`${anio}-12-25`
-
-];
-
-}
-
 function esFeriado(fecha){
-
-const anio =
-fecha.getFullYear();
-
-const texto =
-fecha.toISOString().split("T")[0];
-
-const oficiales =
-obtenerFeriadosPeru(anio);
-
-return oficiales.includes(texto)
-|| feriadosExtras.includes(texto);
+ const t=fecha.toISOString().split("T")[0];
+ return obtenerFeriadosPeru(fecha.getFullYear()).includes(t)||feriadosExtras.includes(t);
 }
-
-function formatear(fecha){
-
-return fecha.toLocaleDateString(
-"es-PE"
-);
-
+function formatear(f){return f.toLocaleDateString("es-PE");}
+function nombreDia(f){return ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][f.getDay()];}
+function guardarHistorial(i,f){
+ historial.unshift({inicio:i,final:f}); historial=historial.slice(0,10);
+ localStorage.setItem("historialCalculos",JSON.stringify(historial)); mostrarHistorial();
 }
+function mostrarHistorial(){
+ const t=document.getElementById("tablaHistorial"); t.innerHTML="";
+ historial.forEach(x=>t.innerHTML+=`<tr><td>${x.inicio}</td><td>${x.final}</td></tr>`);
+}
+function copiarWhatsApp(){navigator.clipboard.writeText(window.textoWhatsApp||""); alert("Resultado copiado.");}
 
 function calcularFecha(){
+ const valor=document.getElementById("fechaInicio").value;
+ if(!valor){alert("Seleccione una fecha."); return;}
+ const [anio,mes,dia]=valor.split('-');
+ let fecha=new Date(anio,mes-1,dia);
+ const fechaIngresadaTexto=`${dia}/${mes}/${anio}`;
 
-const valor = const fechaIngresadaTexto =
-valor.split('-').reverse().join('/');
-    
-document.getElementById(
-"fechaInicio"
-).value;
+ fecha.setDate(fecha.getDate()+45);
+ const fechaOriginal=new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate());
 
-if(!valor){
+ let motivo="";
+ while(true){
+   const ds=fecha.getDay();
+   if(ds===6){motivo="sábado";fecha.setDate(fecha.getDate()+1);continue;}
+   if(ds===0){motivo="domingo";fecha.setDate(fecha.getDate()+1);continue;}
+   if(esFeriado(fecha)){motivo="feriado";fecha.setDate(fecha.getDate()+1);continue;}
+   break;
+ }
 
-alert(
-"Seleccione una fecha."
-);
+ const mensaje=(fechaOriginal.getTime()===fecha.getTime())
+ ? "✅ La fecha calculada es un día hábil."
+ : `⚠️ La fecha calculada cayó en ${motivo}. Se trasladó al siguiente día hábil.`;
 
-return;
+ const inicioCompleto=`${nombreDia(new Date(anio,mes-1,dia))} ${fechaIngresadaTexto}`;
+ const finalCompleto=`${nombreDia(fecha)} ${formatear(fecha)}`;
+
+ window.textoWhatsApp=`Fecha ingresada: ${inicioCompleto}\nFecha +45 días: ${nombreDia(fechaOriginal)} ${formatear(fechaOriginal)}\nFecha hábil final: ${finalCompleto}`;
+
+ document.getElementById("resultado").innerHTML=`<div class="card">
+ <p><strong>Fecha ingresada:</strong><br>${inicioCompleto}</p>
+ <p><strong>Fecha +45 días:</strong><br>${nombreDia(fechaOriginal)} ${formatear(fechaOriginal)}</p>
+ <p><strong>Fecha hábil final:</strong><br>${finalCompleto}</p>
+ <p><strong>Estado:</strong><br>${mensaje}</p>
+ <button class="copy-btn" onclick="copiarWhatsApp()">📋 Copiar para WhatsApp</button>
+ </div>`;
+
+ guardarHistorial(fechaIngresadaTexto,formatear(fecha));
 }
-
-const [anio, mes, dia] = valor.split('-');
-let fecha = new Date(anio, mes - 1, dia);
-
-fecha.setDate(
-fecha.getDate()+45
-);
-
-const fechaOriginal = new Date(
-fecha.getFullYear(),
-fecha.getMonth(),
-fecha.getDate()
-);
-
-let motivo = "";
-
-while(true){
-
-const dia =
-fecha.getDay();
-
-if(dia===6){
-
-motivo =
-"sábado";
-
-fecha.setDate(
-fecha.getDate()+1
-);
-
-continue;
-
-}
-
-if(dia===0){
-
-motivo =
-"domingo";
-
-fecha.setDate(
-fecha.getDate()+1
-);
-
-continue;
-
-}
-
-if(esFeriado(fecha)){
-
-motivo =
-"feriado";
-
-fecha.setDate(
-fecha.getDate()+1
-);
-
-continue;
-
-}
-
-break;
-
-}
-
-let mensaje="";
-
-if(
-fechaOriginal.getTime()
-=== fecha.getTime()
-){
-
-mensaje =
-"✅ La fecha calculada es un día hábil.";
-
-}else{
-
-mensaje =
-`⚠️ La fecha calculada cayó en ${motivo}. Se trasladó al siguiente día hábil.`;
-
-}
-
-document.getElementById(
-"resultado"
-).innerHTML =
-
-`<div class="card">
-
-<p><strong>Fecha ingresada:</strong>
-${fechaIngresadaTexto}
-</p>
-
-<p><strong>Fecha +45 días:</strong>
-${formatear(fechaOriginal)}
-</p>
-
-<p><strong>Fecha hábil final:</strong>
-${formatear(fecha)}
-</p>
-
-<p><strong>Estado:</strong>
-${mensaje}
-</p>
-
-</div>`;
-
-}
-
 mostrarFeriados();
-
+mostrarHistorial();
 </script>
-
 </body>
 </html>
