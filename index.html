@@ -1,289 +1,3 @@
-<!DOCTYPE html>
-
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Calculo de días</title>
-
-<style>
-body{
-    margin:0;
-    padding:20px;
-    font-family:Arial,sans-serif;
-    background:#f4f6f9;
-}
-
-.container{
-    max-width:600px;
-    margin:auto;
-    background:white;
-    padding:25px;
-    border-radius:12px;
-    box-shadow:0 2px 10px rgba(0,0,0,.15);
-}
-
-h1{
-    text-align:center;
-    color:#0b1f4d;
-}
-
-label{
-    display:block;
-    margin-top:15px;
-    font-weight:bold;
-}
-
-input[type="date"]{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-    border:1px solid #ccc;
-    border-radius:6px;
-    box-sizing:border-box;
-}
-
-button{
-    width:100%;
-    margin-top:15px;
-    padding:12px;
-    background:#0b1f4d;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:16px;
-}
-
-button:hover{
-    opacity:.9;
-}
-
-.card{
-    margin-top:20px;
-    padding:15px;
-    background:#f7f9fc;
-    border-radius:8px;
-    border-left:5px solid #0b1f4d;
-}
-
-.feriado-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:8px;
-    padding:8px;
-    background:#f5f5f5;
-    border-radius:5px;
-}
-
-.delete-btn{
-    width:auto;
-    margin:0;
-    background:#c62828;
-    padding:5px 10px;
-}
-
-.footer{
-    text-align:center;
-    margin-top:30px;
-    color:#666;
-}
-</style>
-
-</head>
-
-<body>
-
-<div class="container">
-
-<h1>Calculo de días</h1>
-
-<label>Fecha de inicio</label> <input type="date" id="fechaInicio">
-
-<button onclick="calcularFecha()">
-📅 Calcular fecha hábil
-</button>
-
-<div id="resultado"></div>
-
-<hr style="margin:25px 0">
-
-<h3>Feriados adicionales</h3>
-
-<input type="date" id="nuevoFeriado">
-
-<button onclick="agregarFeriado()">
-➕ Agregar feriado
-</button>
-
-<div id="listaFeriados"></div>
-
-<div class="footer">
-Desarrollado por G.I.
-</div>
-
-</div>
-
-<script>
-
-let feriadosExtras =
-JSON.parse(localStorage.getItem("feriadosExtras")) || [];
-
-function guardarExtras(){
-localStorage.setItem(
-"feriadosExtras",
-JSON.stringify(feriadosExtras)
-);
-}
-
-function agregarFeriado(){
-
-const fecha =
-document.getElementById("nuevoFeriado").value;
-
-if(!fecha) return;
-
-if(!feriadosExtras.includes(fecha)){
-feriadosExtras.push(fecha);
-guardarExtras();
-mostrarFeriados();
-}
-
-document.getElementById("nuevoFeriado").value="";
-}
-
-function eliminarFeriado(fecha){
-
-feriadosExtras =
-feriadosExtras.filter(f=>f!==fecha);
-
-guardarExtras();
-mostrarFeriados();
-}
-
-function mostrarFeriados(){
-
-const div =
-document.getElementById("listaFeriados");
-
-if(feriadosExtras.length===0){
-
-div.innerHTML =
-"<p>No hay feriados adicionales.</p>";
-
-return;
-}
-
-div.innerHTML="";
-
-feriadosExtras.forEach(f=>{
-
-div.innerHTML += `
-<div class="feriado-item">
-<span>${f}</span>
-<button class="delete-btn"
-onclick="eliminarFeriado('${f}')">
-🗑️
-</button>
-</div>
-`;
-
-});
-
-}
-
-function obtenerPascua(anio){
-
-const a = anio % 19;
-const b = Math.floor(anio / 100);
-const c = anio % 100;
-const d = Math.floor(b / 4);
-const e = b % 4;
-const f = Math.floor((b + 8) / 25);
-const g = Math.floor((b - f + 1) / 3);
-const h = (19*a + b - d - g + 15) % 30;
-const i = Math.floor(c / 4);
-const k = c % 4;
-const l = (32 + 2*e + 2*i - h - k) % 7;
-const m = Math.floor((a + 11*h + 22*l)/451);
-
-const mes =
-Math.floor((h+l-7*m+114)/31);
-
-const dia =
-((h+l-7*m+114)%31)+1;
-
-return new Date(anio,mes-1,dia);
-}
-
-function obtenerFeriadosPeru(anio){
-
-const pascua =
-obtenerPascua(anio);
-
-const juevesSanto =
-new Date(pascua);
-
-juevesSanto.setDate(
-juevesSanto.getDate()-3
-);
-
-const viernesSanto =
-new Date(pascua);
-
-viernesSanto.setDate(
-viernesSanto.getDate()-2
-);
-
-function format(d){
-return d.toISOString().split("T")[0];
-}
-
-return [
-
-`${anio}-01-01`,
-format(juevesSanto),
-format(viernesSanto),
-`${anio}-05-01`,
-`${anio}-06-29`,
-`${anio}-07-28`,
-`${anio}-07-29`,
-`${anio}-08-30`,
-`${anio}-10-08`,
-`${anio}-11-01`,
-`${anio}-12-08`,
-`${anio}-12-09`,
-`${anio}-12-25`
-
-];
-
-}
-
-function esFeriado(fecha){
-
-const anio =
-fecha.getFullYear();
-
-const texto =
-fecha.toISOString().split("T")[0];
-
-const oficiales =
-obtenerFeriadosPeru(anio);
-
-return oficiales.includes(texto)
-|| feriadosExtras.includes(texto);
-}
-
-function formatear(fecha){
-
-return fecha.toLocaleDateString(
-"es-PE"
-);
-
-}
-
 function calcularFecha(){
 
 const valor =
@@ -300,27 +14,40 @@ alert(
 return;
 }
 
-let fecha =
-new Date(valor);
+// Evita problemas de zona horaria
+const [anio, mes, dia] =
+valor.split('-');
 
+let fecha =
+new Date(anio, mes - 1, dia);
+
+// Guardamos la fecha ingresada exactamente
+const fechaIngresadaTexto =
+`${dia}/${mes}/${anio}`;
+
+// Sumar 45 días
 fecha.setDate(
 fecha.getDate()+45
 );
 
+// Guardar fecha calculada original
 const fechaOriginal =
-new Date(fecha);
+new Date(
+fecha.getFullYear(),
+fecha.getMonth(),
+fecha.getDate()
+);
 
 let motivo = "";
 
 while(true){
 
-const dia =
+const diaSemana =
 fecha.getDay();
 
-if(dia===6){
+if(diaSemana===6){
 
-motivo =
-"sábado";
+motivo = "sábado";
 
 fecha.setDate(
 fecha.getDate()+1
@@ -330,10 +57,9 @@ continue;
 
 }
 
-if(dia===0){
+if(diaSemana===0){
 
-motivo =
-"domingo";
+motivo = "domingo";
 
 fecha.setDate(
 fecha.getDate()+1
@@ -345,8 +71,7 @@ continue;
 
 if(esFeriado(fecha)){
 
-motivo =
-"feriado";
+motivo = "feriado";
 
 fecha.setDate(
 fecha.getDate()+1
@@ -384,7 +109,7 @@ document.getElementById(
 `<div class="card">
 
 <p><strong>Fecha ingresada:</strong>
-${formatear(new Date(valor))}
+${fechaIngresadaTexto}
 </p>
 
 <p><strong>Fecha +45 días:</strong>
@@ -402,10 +127,3 @@ ${mensaje}
 </div>`;
 
 }
-
-mostrarFeriados();
-
-</script>
-
-</body>
-</html>
